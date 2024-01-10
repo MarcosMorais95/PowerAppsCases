@@ -1,0 +1,50 @@
+// Collect users 
+
+ClearCollect(
+    col_users,
+    UsuáriosdoOffice365.SearchUserV2({isSearchTermRequired: false}).value
+);
+
+//Filter users to ensure everyone has email
+
+ClearCollect(
+    col_filter,
+    Filter(
+        col_users,
+        !IsBlank(Mail)
+    )
+);
+
+// Add columns with the schema
+ClearCollect(
+    col_users_plus,
+    AddColumns(
+        RenameColumns(
+            ShowColumns(
+                col_filter,
+                "DisplayName",
+                "Mail"
+            ),
+            "Mail",
+            "Email"
+        ),
+        "@odata.type",
+        "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
+        "Claims",
+        "i:0#.f|membership|" & ThisRecord.Email,
+        "Department",
+        "",
+        "JobTitle",
+        "",
+        "Picture",
+        ""
+    )
+);
+
+// Save with Patch function
+
+Patch(
+    Lista_BaseTestes,
+    Defaults(Lista_BaseTestes),// Or LookUp
+    {Pessoa: col_users_plus}
+)
